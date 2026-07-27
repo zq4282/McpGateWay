@@ -1,0 +1,11 @@
+# Overrides for GitHub Linguist language detection
+
+# Declare .java files explicitly as Java
+*.java linguist-language=Java
+
+# Treat static web assets as vendored/generated so they don't overshadow Java code stats
+src/main/resources/static/** linguist-vendored
+
+# Treat SDD specifications as documentation
+sdd/** linguist-documentation
+README.md linguist-documentation
