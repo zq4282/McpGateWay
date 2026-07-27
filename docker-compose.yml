@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  mcp-gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mcp-gateway
+    restart: always
+    ports:
+      - "8080:8080"
+    volumes:
+      # 持久化挂载 SQLite 数据库文件
+      - ./mcp-gateway.db:/app/mcp-gateway.db
+    environment:
+      - JAVA_OPTS=-Xms256m -Xmx512m -XX:+UseG1GC
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8080/admin/api-keys || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
