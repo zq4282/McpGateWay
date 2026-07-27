@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic MCP Tool Gateway 控制台</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+    <!-- Header Navbar -->
+    <header>
+        <div class="header-container">
+            <div class="logo">
+                <div class="logo-icon">⚡</div>
+                Dynamic MCP Gateway
+            </div>
+            <nav class="nav-tabs">
+                <button class="nav-tab active" data-tab="apikeys">🔑 API-Key 密钥</button>
+                <button class="nav-tab" data-tab="tools">🛠️ Tool 工具库</button>
+                <button class="nav-tab" data-tab="bindings">🔗 动态授权绑定</button>
+                <button class="nav-tab" data-tab="playground">🧪 MCP 在线调试</button>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <!-- Top Metrics Cards -->
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-info">
+                    <h4>活跃 API-Keys</h4>
+                    <div class="value" id="metric-keys">0</div>
+                </div>
+                <div class="metric-icon" style="background: rgba(59,130,246,0.15); color:#60a5fa;">🔑</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-info">
+                    <h4>Workflow Tools (Agent可见)</h4>
+                    <div class="value" id="metric-workflows">0</div>
+                </div>
+                <div class="metric-icon" style="background: rgba(139,92,246,0.15); color:#c084fc;">⚡</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-info">
+                    <h4>HTTP Tools (内部底层)</h4>
+                    <div class="value" id="metric-http-tools">0</div>
+                </div>
+                <div class="metric-icon" style="background: rgba(16,185,129,0.15); color:#34d399;">🌐</div>
+            </div>
+        </div>
+
+        <!-- Tab 1: API-Key 管理 -->
+        <div id="tab-apikeys" class="tab-content">
+            <div class="panel-section">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        🔑 API-Key 凭证管理
+                    </div>
+                    <button class="btn btn-primary" onclick="openModal('modal-add-key')">+ 生成新 API-Key</button>
+                </div>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>API-Key 密钥</th>
+                                <th>当前状态</th>
+                                <th>创建时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="api-keys-tbody">
+                            <!-- 动态加载 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 2: Tool 工具中心 -->
+        <div id="tab-tools" class="tab-content hidden">
+            <div class="panel-section">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        🛠️ Tool 工具定义中心
+                    </div>
+                    <button class="btn btn-primary" onclick="resetToolForm(); openModal('modal-add-tool');">+ 创建新 Tool</button>
+                </div>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>工具名称</th>
+                                <th>工具类型</th>
+                                <th>描述</th>
+                                <th>版本</th>
+                                <th>状态</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tools-tbody">
+                            <!-- 动态加载 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 3: 动态绑定规则 -->
+        <div id="tab-bindings" class="tab-content hidden">
+            <div class="panel-section">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        🔗 API-Key 动态工具授权分配
+                    </div>
+                    <button class="btn btn-primary" onclick="saveKeyBindings()">💾 保存授权修改</button>
+                </div>
+                <p style="color: var(--text-secondary); margin-bottom: 1.5rem; font-size: 0.9rem;">
+                    选择一个 API-Key 凭证，为其勾选所允许在 <code>tools/list</code> 中暴露和调用的 Workflow Tool 权限。
+                </p>
+
+                <div class="form-group" style="max-width: 400px;">
+                    <label>选择目标 API-Key：</label>
+                    <select class="form-control" id="bind-key-select" onchange="onBindKeyChange()">
+                        <option value="">-- 请选择 API-Key --</option>
+                    </select>
+                </div>
+
+                <div style="margin-top: 1.5rem;">
+                    <label style="display:block; margin-bottom:0.75rem; color:var(--text-secondary); font-weight:500;">
+                        勾选授权给该 API-Key 的 Workflow Tools：
+                    </label>
+                    <div class="metrics-grid" id="bind-tools-container">
+                        <!-- 动态渲染 Tool 勾选框卡片 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 4: MCP 在线调试 Playground -->
+        <div id="tab-playground" class="tab-content hidden">
+            <div class="panel-section">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        🧪 MCP 标准协议握手与调试控制台
+                    </div>
+                    <div id="pg-conn-status">
+                        <span class="badge badge-disabled">⚪ 未建立连接</span>
+                    </div>
+                </div>
+                <div class="playground-container">
+                    <div style="background: rgba(15,23,42,0.5); padding: 1.25rem; border-radius: 12px; border: 1px solid var(--border-color);">
+                        <div class="form-group">
+                            <label>模拟认证 API-Key：</label>
+                            <select class="form-control" id="pg-key-select"></select>
+                        </div>
+                        
+                        <div style="margin-bottom: 1.25rem;">
+                            <label style="display:block; margin-bottom:0.5rem; font-weight:600; font-size:0.85rem; color:var(--text-muted);">STEP 1: 建立协议连接</label>
+                            <button class="btn btn-secondary" style="width: 100%; justify-content:center;" onclick="connectMcp()">🔗 建立 MCP 连接 (initialize)</button>
+                        </div>
+
+                        <hr style="border-color: var(--border-color); margin: 1.25rem 0;">
+                        
+                        <div style="margin-bottom: 1.25rem;">
+                            <label style="display:block; margin-bottom:0.5rem; font-weight:600; font-size:0.85rem; color:var(--text-muted);">STEP 2: 查询可用工具</label>
+                            <button class="btn btn-primary" style="width: 100%; justify-content:center;" onclick="testMcpList()">📋 发送 tools/list 请求</button>
+                        </div>
+
+                        <hr style="border-color: var(--border-color); margin: 1.25rem 0;">
+
+                        <div>
+                            <label style="display:block; margin-bottom:0.5rem; font-weight:600; font-size:0.85rem; color:var(--text-muted);">STEP 3: 执行工具调用</label>
+                            <div class="form-group">
+                                <label>工具名称：</label>
+                                <input type="text" class="form-control" id="pg-tool-name" value="get_weather" placeholder="例如: get_weather">
+                            </div>
+                            <div class="form-group">
+                                <label>入参 JSON：</label>
+                                <textarea class="form-control" id="pg-tool-args" style="min-height: 70px;" placeholder='{"city": "北京"}'></textarea>
+                            </div>
+                            <button class="btn btn-primary" style="width: 100%; justify-content:center;" onclick="testMcpCall()">🚀 发送 tools/call 调用</button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label style="display:block; margin-bottom:0.5rem; font-weight:600; color:var(--text-secondary);">
+                            🖥️ MCP JSON-RPC 交互流日志：
+                        </label>
+                        <div class="console-output" id="pg-console">// 建立连接或点击按钮开始测试 MCP 标准协议流...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal: 新增 API-Key -->
+    <div class="modal-backdrop" id="modal-add-key">
+        <div class="modal">
+            <h3 style="margin-bottom: 1.25rem;">生成新 API-Key</h3>
+            <div class="form-group">
+                <label>API-Key 密钥名称/字符串：</label>
+                <input type="text" class="form-control" id="new-api-key-input" placeholder="例如: mcp-key-prod-01">
+            </div>
+            <div style="display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.5rem;">
+                <button class="btn btn-secondary" onclick="generateRandomKey()">🎲 随机生成</button>
+                <button class="btn btn-secondary" onclick="closeModal('modal-add-key')">取消</button>
+                <button class="btn btn-primary" onclick="createApiKey()">确认创建</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: 新增/编辑 Tool -->
+    <div class="modal-backdrop" id="modal-add-tool">
+        <div class="modal" style="max-width: 750px;">
+            <h3 style="margin-bottom: 1.25rem;" id="modal-tool-title">配置 Tool 工具</h3>
+            <input type="hidden" id="tool-id">
+            
+            <div class="form-group">
+                <label>工具类型：</label>
+                <select class="form-control" id="tool-type" onchange="onToolTypeChange()">
+                    <option value="WORKFLOW">WORKFLOW (面向 Agent 开放，Groovy 脚本编排)</option>
+                    <option value="HTTP">HTTP (内部底层能力，执行网络请求)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>工具名称 (标识符)：</label>
+                <input type="text" class="form-control" id="tool-name" placeholder="如: get_weather">
+            </div>
+
+            <div class="form-group">
+                <label>功能描述：</label>
+                <input type="text" class="form-control" id="tool-desc" placeholder="简要描述工具的功能">
+            </div>
+
+            <!-- Workflow 专属表单 -->
+            <div id="form-workflow-fields">
+                <div class="form-group">
+                    <label>Input Schema (JSON Schema)：</label>
+                    <textarea class="form-control" id="tool-schema" placeholder='{"type":"object","properties":{"city":{"type":"string"}}}'></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Groovy 编排脚本：</label>
+                    <textarea class="form-control" id="tool-groovy" style="min-height: 150px;" placeholder='def res = tools.call(10L, [city: city])&#10;return res'></textarea>
+                </div>
+            </div>
+
+            <!-- HTTP 专属表单 -->
+            <div id="form-http-fields" class="hidden">
+                <div class="form-group">
+                    <label>HTTP 方法：</label>
+                    <select class="form-control" id="http-method">
+                        <option value="GET">GET</option>
+                        <option value="POST">POST</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>目标 URL：</label>
+                    <input type="text" class="form-control" id="http-url" placeholder="https://api.example.com/endpoint">
+                </div>
+                <div class="form-group">
+                    <label>Query 参数模板 (JSON)：</label>
+                    <input type="text" class="form-control" id="http-query" placeholder='{"city":"{{city}}"}'>
+                </div>
+                <div class="form-group">
+                    <label>Headers 模板 (JSON)：</label>
+                    <input type="text" class="form-control" id="http-headers" placeholder='{"Authorization":"Bearer {{token}}"}'>
+                </div>
+                <div class="form-group">
+                    <label>POST Body 模板 (JSON)：</label>
+                    <textarea class="form-control" id="http-body" placeholder='{"id":"{{id}}"}'></textarea>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.5rem;">
+                <button class="btn btn-secondary" onclick="closeModal('modal-add-tool')">取消</button>
+                <button class="btn btn-primary" onclick="saveTool()">保存工具配置</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/app.js"></script>
+</body>
+</html>

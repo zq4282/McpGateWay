@@ -1,0 +1,35 @@
+# Target / Build outputs
+target/
+*.jar
+*.war
+*.ear
+
+# SQLite Database files
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+mcp-gateway.db
+
+# IDE & Editor files
+.idea/
+*.iml
+.vscode/
+*.classpath
+*.project
+*.settings/
+.factorypath
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs & Temporary files
+*.log
+logs/
+tmp/
