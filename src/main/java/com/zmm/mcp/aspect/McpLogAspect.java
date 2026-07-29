@@ -42,6 +42,12 @@ public class McpLogAspect {
     public void toolCallPointcut() {}
 
     /**
+     * 切点：拦截 ResourceRegistry.readResource(ReadResourceRequest request)
+     */
+    @Pointcut("execution(* com.zmm.mcp.resource.ResourceRegistry.readResource(..))")
+    public void resourceReadPointcut() {}
+
+    /**
      * 环绕通知：拦截 Prompt 执行出入参日志
      */
     @Around("promptExecutePointcut()")
@@ -102,6 +108,38 @@ public class McpLogAspect {
             long elapsed = System.currentTimeMillis() - start;
             log.error("[MCP-AOP-LOG] Workflow Tool [{}] 执行异常 | 耗时: {} ms | 错误: {}", toolId, elapsed, t.getMessage());
             log.info("---------- [MCP-AOP-LOG] Workflow 工具底层执行异常 ----------");
+            throw t;
+        }
+    }
+
+    /**
+     * 环绕通知：拦截 Resource 读取出入参日志
+     */
+    @Around("resourceReadPointcut()")
+    public Object logResourceRead(ProceedingJoinPoint joinPoint) throws Throwable {
+        long start = System.currentTimeMillis();
+        String apiKey = ApiKeyContext.get();
+        Object[] args = joinPoint.getArgs();
+        String uri = "UNKNOWN";
+
+        if (args != null && args.length > 0 && args[0] instanceof io.modelcontextprotocol.spec.McpSchema.ReadResourceRequest req) {
+            uri = req.uri();
+        }
+
+        log.info("========== [MCP-AOP-LOG] Resource 读取请求开始 ==========");
+        log.info("[MCP-AOP-LOG] API-Key: [{}] | Resource URI: [{}]", apiKey, uri);
+
+        try {
+            Object result = joinPoint.proceed();
+            long elapsed = System.currentTimeMillis() - start;
+            log.info("[MCP-AOP-LOG] Resource [{}] 读取成功 | 耗时: {} ms", uri, elapsed);
+            log.info("[MCP-AOP-LOG] 出参 Result: {}", toJsonQuietly(result));
+            log.info("========== [MCP-AOP-LOG] Resource 读取请求结束 ==========");
+            return result;
+        } catch (Throwable t) {
+            long elapsed = System.currentTimeMillis() - start;
+            log.error("[MCP-AOP-LOG] Resource [{}] 读取失败 | 耗时: {} ms | 异常: {}", uri, elapsed, t.getMessage());
+            log.info("========== [MCP-AOP-LOG] Resource 读取请求异常 ==========");
             throw t;
         }
     }

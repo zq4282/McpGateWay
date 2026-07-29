@@ -31,7 +31,7 @@ public class PromptRegistryTest {
     @Test
     public void testRegisterAndListPrompts() {
         Prompt promptDef = new Prompt("test_prompt", "测试 Prompt", List.of(new PromptArgument("name", "姓名", true)));
-        PromptCallback callback = new WorkflowPromptCallback(promptDef, "Hello {{name}}!", null, apiKeyAuthService);
+        PromptCallback callback = new WorkflowPromptCallback(promptDef, "Hello {{name}}!");
 
         promptRegistry.registerPrompt(callback);
 
@@ -46,9 +46,7 @@ public class PromptRegistryTest {
         Prompt promptDef = new Prompt("code_review", "Code Review Prompt", List.of(new PromptArgument("code", "代码", true)));
         PromptCallback callback = new WorkflowPromptCallback(
                 promptDef,
-                "请审阅以下代码：\n```java\n{{code}}\n```",
-                null,
-                apiKeyAuthService
+                "请审阅以下代码：\n```java\n{{code}}\n```"
         );
 
         promptRegistry.registerPrompt(callback);

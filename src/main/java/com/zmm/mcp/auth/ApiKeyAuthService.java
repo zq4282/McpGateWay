@@ -21,6 +21,7 @@ public class ApiKeyAuthService {
     private final ApiKeyMapper apiKeyMapper;
     private final ApiKeyToolMapper apiKeyToolMapper;
     private final com.zmm.mcp.domain.mapper.ApiKeyPromptMapper apiKeyPromptMapper;
+    private final com.zmm.mcp.domain.mapper.ApiKeyResourceMapper apiKeyResourceMapper;
 
     /**
      * 校验指定 API-Key 是否有权调用某个工具
@@ -92,6 +93,43 @@ public class ApiKeyAuthService {
 
         if (binding == null) {
             log.warn("Prompt 调用授权失败：API-Key [{}] 无权调用 promptId={}", apiKey, promptId);
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * 校验指定 API-Key 是否有权读取某个 Resource
+     *
+     * @param apiKey 当前请求的 API-Key 字符串
+     * @param resourceId 被读取的 Resource ID（resource_definition.id）
+     * @return true=有权限，false=无权限
+     */
+    public boolean isResourceAllowed(String apiKey, Long resourceId) {
+        if (apiKey == null || resourceId == null) {
+            return false;
+        }
+
+        ApiKey keyEntity = apiKeyMapper.selectOne(
+                new LambdaQueryWrapper<ApiKey>()
+                        .eq(ApiKey::getApiKey, apiKey)
+                        .eq(ApiKey::getStatus, 1)
+        );
+        if (keyEntity == null) {
+            log.warn("Resource 读取授权失败：API-Key 不存在或已禁用 [{}]", apiKey);
+            return false;
+        }
+
+        com.zmm.mcp.domain.entity.ApiKeyResource binding = apiKeyResourceMapper.selectOne(
+                new LambdaQueryWrapper<com.zmm.mcp.domain.entity.ApiKeyResource>()
+                        .eq(com.zmm.mcp.domain.entity.ApiKeyResource::getApiKeyId, keyEntity.getId())
+                        .eq(com.zmm.mcp.domain.entity.ApiKeyResource::getResourceId, resourceId)
+                        .eq(com.zmm.mcp.domain.entity.ApiKeyResource::getEnabled, 1)
+        );
+
+        if (binding == null) {
+            log.warn("Resource 读取授权失败：API-Key [{}] 无权读取 resourceId={}", apiKey, resourceId);
             return false;
         }
 

@@ -21,7 +21,6 @@ import java.util.List;
 public class StaticPrompts {
 
     private final PromptRegistry promptRegistry;
-    private final ApiKeyAuthService apiKeyAuthService;
 
     @EventListener(ApplicationReadyEvent.class)
     public void registerStaticPrompts() {
@@ -49,7 +48,7 @@ public class StaticPrompts {
                 3. 安全隐患（如 SQL 注入、空指针风险等）
                 4. 规范性与可读性优化
                 """;
-        promptRegistry.registerPrompt(new WorkflowPromptCallback(codeReviewDef, codeReviewTemplate, null, apiKeyAuthService));
+        promptRegistry.registerPrompt(new WorkflowPromptCallback(codeReviewDef, codeReviewTemplate));
 
         // 2. SQL 生成器 Prompt
         Prompt sqlGenDef = new Prompt(
@@ -73,7 +72,7 @@ public class StaticPrompts {
                 1. 标准 SQL 查询语句（包含必要的 JOIN、WHERE 过滤与 GROUP BY 聚合）
                 2. 简要的 SQL 索引优化与执行逻辑说明
                 """;
-        promptRegistry.registerPrompt(new WorkflowPromptCallback(sqlGenDef, sqlGenTemplate, null, apiKeyAuthService));
+        promptRegistry.registerPrompt(new WorkflowPromptCallback(sqlGenDef, sqlGenTemplate));
 
         // 3. 文本摘要 Prompt
         Prompt textSummaryDef = new Prompt(
@@ -93,7 +92,7 @@ public class StaticPrompts {
                 1. 提炼核心结论与关键要点（控制在 {{max_words}} 字或若干条核心 Bullet Points 左右）
                 2. 保持客观准确，逻辑层次清晰
                 """;
-        promptRegistry.registerPrompt(new WorkflowPromptCallback(textSummaryDef, textSummaryTemplate, null, apiKeyAuthService));
+        promptRegistry.registerPrompt(new WorkflowPromptCallback(textSummaryDef, textSummaryTemplate));
 
         log.info("成功初始化并注册静态 Prompts 模版 3 个");
     }

@@ -28,8 +28,6 @@ public class WorkflowPromptCallback implements PromptCallback {
 
     private final Prompt promptDefinition;
     private final String template;
-    private final Long promptId;
-    private final ApiKeyAuthService apiKeyAuthService;
 
     private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("\\{\\{\\s*([a-zA-Z0-9_]+)\\s*\\}\\}");
 
@@ -42,16 +40,6 @@ public class WorkflowPromptCallback implements PromptCallback {
     public GetPromptResult get(GetPromptRequest request) {
         long startTime = System.currentTimeMillis();
         try {
-            // ===== 1. 授权校验：验证当前 API-Key 是否有权调用本 Prompt =====
-            String apiKey = ApiKeyContext.get();
-            if (apiKey != null && promptId != null && apiKeyAuthService != null) {
-                if (!apiKeyAuthService.isPromptAllowed(apiKey, promptId)) {
-                    log.warn("Prompt [{}] 调用被拒绝：API-Key [{}] 无权调用此 Prompt", promptDefinition.name(), apiKey);
-                    throw new SecurityException("当前 API-Key 无权调用 Prompt: " + promptDefinition.name());
-                }
-            }
-            // ===== 授权校验结束 =====
-
             log.debug("Prompt [{}] 开始渲染，入参: {}", promptDefinition.name(), request.arguments());
 
             // ===== 2. 参数提取与模版渲染 =====

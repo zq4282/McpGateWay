@@ -68,3 +68,25 @@ CREATE TABLE IF NOT EXISTS api_key_prompt
     enabled    INTEGER DEFAULT 1,
     PRIMARY KEY (api_key_id, prompt_id)
 );
+
+-- Resource 定义表
+CREATE TABLE IF NOT EXISTS resource_definition
+(
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    uri          VARCHAR(255) UNIQUE NOT NULL,
+    name         VARCHAR(100),
+    description  TEXT,
+    mime_type    VARCHAR(50),
+    content      TEXT,
+    enabled      INTEGER DEFAULT 1,
+    created_time DATETIME
+);
+
+-- API-Key 与 Resource 的关联关系（控制哪个 Key 能看到与读取哪些 Resource）
+CREATE TABLE IF NOT EXISTS api_key_resource
+(
+    api_key_id  INTEGER,
+    resource_id INTEGER,
+    enabled     INTEGER DEFAULT 1,
+    PRIMARY KEY (api_key_id, resource_id)
+);

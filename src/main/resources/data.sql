@@ -111,3 +111,46 @@ INSERT OR IGNORE INTO api_key_prompt (api_key_id, prompt_id, enabled) VALUES (1,
 -- test-api-key-single (id=3) 仅授权使用 1 个 Prompt (weather_advisor_prompt)
 INSERT OR IGNORE INTO api_key_prompt (api_key_id, prompt_id, enabled) VALUES (3, 101, 1);
 
+-- ===========================================================
+-- 7. 数据库持久化 Resource 动态资源数据
+-- ===========================================================
+
+-- Resource 1: 系统开发与操作手册 (Markdown 文本)
+INSERT OR IGNORE INTO resource_definition (id, uri, name, description, mime_type, content, enabled, created_time)
+VALUES (201, 'file:///docs/gateway_manual.md', 'MCP Gateway 系统操作手册', '包含 Gateway 网关配置、Tool、Prompt 与 Resource 的核心使用说明文档', 'text/markdown',
+        '# MCP Gateway 网关使用手册
+
+## 概述
+MCP Gateway 是一款基于 Spring Boot 3 与 MCP 协议规范构建的高性能 AI 代理网关。
+
+## 核心功能
+1. **Tools 动态管理**：支持 HTTP 与 Groovy Workflow 两种类型的动态工具扩展。
+2. **Prompts 持久化**：支持模版渲染与工具联动提示词。
+3. **Resources 动态资源**：支持全类型静态与动态资源的客户端读取与隔离。',
+        1, datetime('now'));
+
+-- Resource 2: 网关实时运行状态 (JSON)
+INSERT OR IGNORE INTO resource_definition (id, uri, name, description, mime_type, content, enabled, created_time)
+VALUES (202, 'system://config/system_status.json', '系统运行状态配置', '静态/动态服务节点状态与版本指标配置', 'application/json',
+        '{"gateway_version":"0.0.1","status":"UP","active_mcp_listeners":1,"enabled_features":["tools","prompts","resources","aop_logging"]}',
+        1, datetime('now'));
+
+-- Resource 3: 数据字典 (CSV)
+INSERT OR IGNORE INTO resource_definition (id, uri, name, description, mime_type, content, enabled, created_time)
+VALUES (203, 'db://data/sample_dictionary.csv', '系统数据字典词条', '核心业务字段与映射说明数据字典', 'text/csv',
+        'field_name,field_type,description
+city,string,城市名称
+type,string,热搜榜单类型
+activity,string,拟进行的活动',
+        1, datetime('now'));
+
+-- 8. API-Key 与 Resource 的授权关联
+-- api-key-a (id=1) 授权读取全部 3 个 Resource
+INSERT OR IGNORE INTO api_key_resource (api_key_id, resource_id, enabled) VALUES (1, 201, 1);
+INSERT OR IGNORE INTO api_key_resource (api_key_id, resource_id, enabled) VALUES (1, 202, 1);
+INSERT OR IGNORE INTO api_key_resource (api_key_id, resource_id, enabled) VALUES (1, 203, 1);
+
+-- test-api-key-single (id=3) 仅授权读取 1 个 Resource (gateway_manual.md)
+INSERT OR IGNORE INTO api_key_resource (api_key_id, resource_id, enabled) VALUES (3, 201, 1);
+
+

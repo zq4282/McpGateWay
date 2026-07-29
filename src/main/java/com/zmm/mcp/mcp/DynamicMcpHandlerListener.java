@@ -35,8 +35,10 @@ public class DynamicMcpHandlerListener implements ApplicationListener<Applicatio
     private final WebMvcStatelessServerTransport transport;
     private final ToolDefinitionMapper toolDefinitionMapper;
     private final com.zmm.mcp.domain.mapper.PromptDefinitionMapper promptDefinitionMapper;
+    private final com.zmm.mcp.domain.mapper.ResourceDefinitionMapper resourceDefinitionMapper;
     private final StaticToolRegistry staticToolRegistry;
     private final PromptRegistry promptRegistry;
+    private final com.zmm.mcp.resource.ResourceRegistry resourceRegistry;
     private final ObjectMapper objectMapper;
 
     @Override
@@ -49,7 +51,7 @@ public class DynamicMcpHandlerListener implements ApplicationListener<Applicatio
             if (originalHandler != null && !(originalHandler instanceof DynamicHandlerDecorator)) {
                 DynamicHandlerDecorator decorator = new DynamicHandlerDecorator(originalHandler);
                 transport.setMcpHandler(decorator);
-                log.info("成功向 MCP WebMvc ServerTransport 安装动态 Tools/Prompts Decorator 拦截器");
+                log.info("成功向 MCP WebMvc ServerTransport 安装动态 Tools/Prompts/Resources Decorator 拦截器");
             }
         } catch (Exception e) {
             log.error("安装 DynamicMcpHandler 拦截器失败: {}", e.getMessage(), e);
@@ -71,6 +73,12 @@ public class DynamicMcpHandlerListener implements ApplicationListener<Applicatio
             }
             if ("prompts/get".equals(request.method())) {
                 return handlePromptsGet(request);
+            }
+            if ("resources/list".equals(request.method())) {
+                return handleResourcesList(request);
+            }
+            if ("resources/read".equals(request.method())) {
+                return handleResourcesRead(request);
             }
             if ("server/discover".equals(request.method())) {
                 log.info("收到客户端发起的 server/discover 请求，返回 Method Not Found 规范响应");
@@ -139,6 +147,49 @@ public class DynamicMcpHandlerListener implements ApplicationListener<Applicatio
                 return Mono.just(new JSONRPCResponse(request.jsonrpc(), request.id(), result, null));
             } catch (Exception e) {
                 log.error("处理 prompts/get 失败: {}", e.getMessage(), e);
+                JSONRPCResponse.JSONRPCError error = new JSONRPCResponse.JSONRPCError(-32603, e.getMessage(), null);
+                return Mono.just(new JSONRPCResponse(request.jsonrpc(), request.id(), null, error));
+            }
+        }
+
+        private Mono<JSONRPCResponse> handleResourcesList(JSONRPCRequest request) {
+            try {
+                List<Resource> resources = resourceRegistry.listResources();
+                String apiKey = ApiKeyContext.get();
+                if (apiKey != null) {
+                    List<com.zmm.mcp.domain.entity.ResourceDefinition> allowedResources = resourceDefinitionMapper.findResourcesByApiKey(apiKey);
+                    Set<String> allowedUris = allowedResources.stream()
+                            .map(com.zmm.mcp.domain.entity.ResourceDefinition::getUri)
+                            .collect(Collectors.toSet());
+
+                    resources = resources.stream()
+                            .filter(r -> allowedUris.contains(r.uri()))
+                            .collect(Collectors.toList());
+                }
+
+                ListResourcesResult result = new ListResourcesResult(resources, null, null);
+                log.info("MCP Handler 成功处理 resources/list，返回 Resource {} 个", resources.size());
+                return Mono.just(new JSONRPCResponse(request.jsonrpc(), request.id(), result, null));
+            } catch (Exception e) {
+                log.error("处理 resources/list 失败: {}", e.getMessage(), e);
+                JSONRPCResponse.JSONRPCError error = new JSONRPCResponse.JSONRPCError(-32603, e.getMessage(), null);
+                return Mono.just(new JSONRPCResponse(request.jsonrpc(), request.id(), null, error));
+            }
+        }
+
+        private Mono<JSONRPCResponse> handleResourcesRead(JSONRPCRequest request) {
+            try {
+                ReadResourceRequest readResourceReq;
+                if (request.params() instanceof ReadResourceRequest rrr) {
+                    readResourceReq = rrr;
+                } else {
+                    readResourceReq = objectMapper.convertValue(request.params(), ReadResourceRequest.class);
+                }
+
+                ReadResourceResult result = resourceRegistry.readResource(readResourceReq);
+                return Mono.just(new JSONRPCResponse(request.jsonrpc(), request.id(), result, null));
+            } catch (Exception e) {
+                log.error("处理 resources/read 失败: {}", e.getMessage(), e);
                 JSONRPCResponse.JSONRPCError error = new JSONRPCResponse.JSONRPCError(-32603, e.getMessage(), null);
                 return Mono.just(new JSONRPCResponse(request.jsonrpc(), request.id(), null, error));
             }

@@ -29,7 +29,6 @@ public class DynamicPromptLoader {
 
     private final PromptDefinitionMapper promptDefinitionMapper;
     private final PromptRegistry promptRegistry;
-    private final ApiKeyAuthService apiKeyAuthService;
     private final ObjectMapper objectMapper;
 
     @EventListener(ApplicationReadyEvent.class)
@@ -56,9 +55,7 @@ public class DynamicPromptLoader {
                 );
                 WorkflowPromptCallback callback = new WorkflowPromptCallback(
                         promptDef,
-                        pd.getTemplate(),
-                        pd.getId(),
-                        apiKeyAuthService
+                        pd.getTemplate()
                 );
                 promptRegistry.registerPrompt(callback);
                 count++;
