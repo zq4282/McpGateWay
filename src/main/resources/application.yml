@@ -2,6 +2,10 @@ spring:
   application:
     name: mcp-gateway
 
+  jackson:
+    deserialization:
+      fail-on-unknown-properties: false
+
   datasource:
     url: jdbc:sqlite:./mcp-gateway.db
     driver-class-name: org.sqlite.JDBC

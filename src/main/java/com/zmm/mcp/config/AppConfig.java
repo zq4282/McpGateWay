@@ -1,5 +1,10 @@
 package com.zmm.mcp.config;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.modelcontextprotocol.json.McpJsonMapper;
+import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
+import org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilderCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
@@ -47,4 +52,22 @@ public class AppConfig {
 
         return new RestTemplate(factory);
     }
+
+    /**
+     * 配置 Jackson 全局反序列化特性：忽略未知属性
+     * 防止 MCP 客户端发送新协议特性或拓展字段时报错 UnrecognizedPropertyException
+     */
+    @Bean
+    public Jackson2ObjectMapperBuilderCustomizer jacksonCustomizer() {
+        return builder -> builder.featuresToDisable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+    }
+
+    /**
+     * 配置 Spring 环境下的 McpJsonMapper Bean
+     */
+    @Bean
+    public McpJsonMapper mcpJsonMapper(ObjectMapper objectMapper) {
+        return new JacksonMcpJsonMapper(objectMapper);
+    }
 }
+
