@@ -54,3 +54,60 @@ INSERT OR IGNORE INTO api_key_tool (api_key_id, tool_id, enabled) VALUES (1, 21,
 
 -- test-api-key-single (id=3) 仅绑定 1 个工具 (get_weather)
 INSERT OR IGNORE INTO api_key_tool (api_key_id, tool_id, enabled) VALUES (3, 11, 1);
+
+-- ===========================================================
+-- 5. 数据库持久化 Prompt 模板（支持引导 LLM 调用 MCP Tool）
+-- ===========================================================
+
+-- Prompt 1: 智能天气出行顾问 (引导调用 get_weather 工具)
+INSERT OR IGNORE INTO prompt_definition (id, name, description, arguments_json, template, enabled, created_time)
+VALUES (101, 'weather_advisor_prompt', '分析指定城市天气并提供智能穿衣与出行建议（引导调用 get_weather 工具）',
+        '[{"name":"city","description":"需要查询天气的城市名称（如：北京、上海、东京）","required":true},{"name":"activity","description":"拟进行的活动类型（如：户外登山、商旅出差、露营、居家）","required":false}]',
+        '你是一位专业的智能生活与出行顾问。用户希望了解 {{city}} 的天气并获得关于【{{activity}}】的针对性建议。
+
+请按以下步骤处理：
+1. **调用工具**：请优先调用 `get_weather` 工具（参数：city="{{city}}"）获取实时气象数据。
+2. **分析天气**：读取工具返回的温度、天气状况、风向风力与湿度等核心指标。
+3. **输出建议**：
+   - 针对【{{activity}}】活动给出针对性指导（如穿衣搭配、携带雨具、防晒指数或避险提示）。
+   - 提供 1-2 条暖心提醒。',
+        1, datetime('now'));
+
+-- Prompt 2: 全网热点趋势分析助手 (引导调用 get_hotboard 工具)
+INSERT OR IGNORE INTO prompt_definition (id, name, description, arguments_json, template, enabled, created_time)
+VALUES (102, 'hot_topics_analyst_prompt', '获取指定平台的实时热搜榜单并提炼热度趋势（引导调用 get_hotboard 工具）',
+        '[{"name":"type","description":"平台类型（weibo:微博, zhihu:知乎, bilibili:B站, douyin:抖音, toutiao:头条）","required":true},{"name":"focus_topic","description":"重点关注的主题词或领域（选填，如：科技、AI、美食）","required":false}]',
+        '你是一位资深的网络舆情与热点趋势分析师。
+
+请执行以下任务：
+1. **调用工具**：使用 `get_hotboard` 工具（参数：type="{{type}}"）获取当前平台的实时热榜榜单。
+2. **提取焦点**：从返回的热搜列表中遴选前 10 个热门话题。若指定了重点关注主题【{{focus_topic}}】，请重点提炼与该主题关联的讨论。
+3. **输出报告**：
+   - 给出 TOP 5 热搜话题摘要清单。
+   - 分析当前平台用户的关注热点趋势与情绪走向。',
+        1, datetime('now'));
+
+-- Prompt 3: 每日综合早报生成器 (链式引导调用 get_weather 和 get_hotboard 工具)
+INSERT OR IGNORE INTO prompt_definition (id, name, description, arguments_json, template, enabled, created_time)
+VALUES (103, 'daily_briefing_prompt', '生成一份融合当地天气与今日全网热点的结构化每日早报（组合调用 get_weather 与 get_hotboard 工具）',
+        '[{"name":"city","description":"用户所在城市","required":true},{"name":"hot_platform","description":"想要看热搜的平台，默认 weibo","required":false}]',
+        '请为用户打造一份版面精致、信息丰富的《每日综合早报》。
+
+请按照以下顺序发起工具调用并生成内容：
+1. **获取天气**：调用 `get_weather` 工具（city="{{city}}"）获取本地天气预报。
+2. **获取热点**：调用 `get_hotboard` 工具（type="{{hot_platform}}"）获取平台热榜数据。
+3. **合成早报**：
+   - 【早安问候与天气专栏】：播报今日天气状况、气温区间与穿衣出行指南。
+   - 【热点早知道】：呈现 3-5 条精选热搜标题及简要解读。
+   - 【今日励志语录】：附上一句积极向上的早安金句。',
+        1, datetime('now'));
+
+-- 6. API-Key 与 Prompt 的授权关联
+-- api-key-a (id=1) 授权使用全部 3 个 Prompt
+INSERT OR IGNORE INTO api_key_prompt (api_key_id, prompt_id, enabled) VALUES (1, 101, 1);
+INSERT OR IGNORE INTO api_key_prompt (api_key_id, prompt_id, enabled) VALUES (1, 102, 1);
+INSERT OR IGNORE INTO api_key_prompt (api_key_id, prompt_id, enabled) VALUES (1, 103, 1);
+
+-- test-api-key-single (id=3) 仅授权使用 1 个 Prompt (weather_advisor_prompt)
+INSERT OR IGNORE INTO api_key_prompt (api_key_id, prompt_id, enabled) VALUES (3, 101, 1);
+

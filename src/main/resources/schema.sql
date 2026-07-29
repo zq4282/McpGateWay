@@ -47,3 +47,24 @@ CREATE TABLE IF NOT EXISTS http_tool_config
     query_template   TEXT,
     body_template    TEXT
 );
+
+-- Prompt 定义表
+CREATE TABLE IF NOT EXISTS prompt_definition
+(
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    name           VARCHAR(100) UNIQUE NOT NULL,
+    description    TEXT,
+    arguments_json TEXT,
+    template       TEXT,
+    enabled        INTEGER DEFAULT 1,
+    created_time   DATETIME
+);
+
+-- API-Key 与 Prompt 的关联关系（控制哪个 Key 能看到与调用哪些 Prompt）
+CREATE TABLE IF NOT EXISTS api_key_prompt
+(
+    api_key_id INTEGER,
+    prompt_id  INTEGER,
+    enabled    INTEGER DEFAULT 1,
+    PRIMARY KEY (api_key_id, prompt_id)
+);
